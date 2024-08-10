@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "continuum"
+version = "0.1.0"
+description = "Project to deploy ML models through CICD"
+authors = ["Andrew Tanner <andrew@drewnix.dev>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
