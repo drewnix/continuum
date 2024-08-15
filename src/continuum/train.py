@@ -1,28 +1,34 @@
-# scripts/train.py
-import joblib
-import pandas as pd
-from sklearn.datasets import load_iris
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
+import kfp
+from kfp import dsl
+from kfp.components import create_component_from_func
 
-def load_data():
-    iris = load_iris()
-    df = pd.DataFrame(data=iris.data, columns=iris.feature_names)
-    df['target'] = (iris.target == 0).astype(int)
-    return df
+def train_model(data_path: str, model_path: str):
+    import tensorflow as tf
+    from tensorflow.keras import layers
+    
+    # Load data
+    (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data(path=data_path)
+    
+    # Normalize data
+    x_train, x_test = x_train / 255.0, x_test / 255.0
+    
+    # Build model
+    model = tf.keras.models.Sequential([
+        layers.Flatten(input_shape=(28, 28)),
+        layers.Dense(128, activation='relu'),
+        layers.Dropout(0.2),
+        layers.Dense(10)
+    ])
+    
+    # Compile model
+    model.compile(optimizer='adam',
+                  loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                  metrics=['accuracy'])
+    
+    # Train model
+    model.fit(x_train, y_train, epochs=5)
+    
+    # Save model
+    model.save(model_path)
 
-def train_model(data):
-    X = data.drop(['target'], axis=1)
-    y = data['target']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    model = LogisticRegression()
-    model.fit(X_train, y_train)
-    return model
-
-def save_model(model, filepath):
-    joblib.dump(model, filepath)
-
-if __name__ == "__main__":
-    data = load_data()
-    model = train_model(data)
-    save_model(model, 'models/logistic_regression_model.pkl')
+train_op = create_component_from_func(train_model, base_image='tensorflow/tensorflow:latest')
